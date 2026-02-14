@@ -21,13 +21,22 @@ PLATFORM=$(detect_platform)
 PEON_DIR="${CLAUDE_PEON_DIR:-$HOME/.claude/hooks/peon-ping}"
 CONFIG="$PEON_DIR/config.json"
 STATE="$PEON_DIR/.state.json"
+SOUND_PID_FILE="$PEON_DIR/.sound.pid"
 
 # --- Platform-aware audio playback ---
 play_sound() {
   local file="$1" vol="$2"
+
+  # Kill previous sound if still playing
+  if [ -f "$SOUND_PID_FILE" ]; then
+    kill "$(cat "$SOUND_PID_FILE" 2>/dev/null)" 2>/dev/null
+    rm -f "$SOUND_PID_FILE"
+  fi
+
   case "$PLATFORM" in
     mac)
       nohup afplay -v "$vol" "$file" >/dev/null 2>&1 &
+      echo $! > "$SOUND_PID_FILE"
       ;;
     wsl)
       local wpath
@@ -491,5 +500,4 @@ if [ -n "$NOTIFY" ] && [ "$PAUSED" != "true" ]; then
   fi
 fi
 
-wait
 exit 0
